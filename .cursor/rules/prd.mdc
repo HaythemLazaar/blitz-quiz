@@ -1,0 +1,95 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 📄 PRD: Quiz Game App (French – Real-Time – Event Based)
+
+## 🎯 Goal
+
+Build a real-time quiz game app for a live event with **two teams (Red & Blue)**. The system runs entirely in the browser across 4 synced screens:
+
+1. Projector (big screen)
+2. Presenter control panel
+3. Red team screen
+4. Blue team screen
+
+All screens must stay in sync via **Supabase Realtime Channels**. No database schema or permanent storage is required. State is broadcast live and transient.
+
+---
+
+## 🧠 Core Architecture
+
+- **Realtime only:** use `supabase.channel().broadcast()` for all state updates.
+- **Shared channel:** `quiz_channel`
+- **State shape to broadcast:**
+
+```ts
+{
+  questionNumber: number;
+  redPoints: number;
+  bluePoints: number;
+  buzzerTeam: 'red' | 'blue' | null;
+}
+```
+
+## Questions
+
+- All quiz questions will be statically defined in a local file:
+questions.ts
+
+- This file will export a list of questions like:
+
+```ts
+
+export export const questions = [
+    {
+      number: 1,
+      text: 'Quelle est la capitale de la France ?',
+      answer: 'Paris',
+      points: 10,
+      penalty: -5,
+    },
+    {
+      number: 2,
+      text: 'Combien y a-t-il de continents sur Terre ?',
+      answer: '7',
+      points: 10,
+      penalty: -3,
+    },
+  // ...
+];
+```
+
+- All screens should import from this file and render based on questionNumber
+
+
+## Screens & Functional Requirements
+1. Projector Screen (/projector)
+- Display both team scores (very large)
+- Display current question number and text (from questions.ts)
+- Highlight team that buzzed first
+- If game hasn't started: show "En attente..." centered
+
+2. Presenter Screen (/presenter)
+- Controls:
+    - Increment/decrement red/blue points
+    - Set buzzerTeam to "red" or "blue"
+    - Advance questionNumber
+    - Reset buzzerTeam
+- Every action broadcasts new full state to the channel
+
+3. Team Screens (/team/red and /team/blue)
+- Display:
+    - Team score
+    - Large "Buzz!" button
+
+- On press:
+    - If buzzerTeam is null, update buzzerTeam with this team’s color
+    - Otherwise: disable button (already buzzed)
+
+## 🌐 Realtime Behavior
+- Every screen listens to updates on quiz_channel
+- Presenter emits full updated state as the source of truth
+
+- UI across all clients updates reactively on each state broadcast
